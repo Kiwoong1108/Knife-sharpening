@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:dark}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>칼 강화 대장간</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: 대장간 화로(칼 + 강화) 왼쪽, 상점/기록 오른쪽, 아래 칼 도감 그리드. 숯불 어둠 단일 테마. */
+:root {
+  color-scheme: dark;
+  --bg: #14100d;
+  --panel: #1e1813;
+  --panel-2: #271f18;
+  --line: #3a2d22;
+  --fg: #f1e8dc;
+  --muted: #a6968a;
+  --ember: #ff7a2f;
+  --gold: #e9c46a;
+  --ok: #5fd38d;
+  --fail: #9aa3ab;
+  --boom: #ff4d4d;
+  --f-display: "Black Han Sans", "IBM Plex Sans KR", sans-serif;
+  --f-body: "IBM Plex Sans KR", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  background-image: radial-gradient(ellipse 80% 50% at 30% 0%, rgba(255,122,47,.10), transparent 70%);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(30px, 6vw, 44px); margin: 0; line-height: 1; letter-spacing: .02em; }
+h1 span { color: var(--ember); }
+.sub { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hbtn { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 700; }
+.hbtn b { font-family: var(--f-mono); font-size: 11px; color: var(--muted); font-weight: 500; margin-left: 2px; }
+.hbtn:hover { border-color: #5a4528; }
+.gold-big { margin-left: 6px;  font-family: var(--f-mono); font-weight: 700; font-size: 22px; color: var(--gold); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+.coin { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2b8, var(--gold) 55%, #9a7420); box-shadow: 0 0 8px rgba(233,196,106,.5); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; min-width: 0; }
+.label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 10px; }
+
+/* forge */
+.forge { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
+@media (max-width: 560px) { .forge { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.stage { position: relative; width: 240px; height: 400px; border-radius: 12px; background: radial-gradient(ellipse at 50% 70%, #2a1f17, #120e0b 75%); border: 1px solid var(--line); overflow: hidden; }
+.stage canvas { display: block; }
+.stage.shake { animation: shake .3s linear; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
+.anvil { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: linear-gradient(#2c241e, #17120e); border-top: 1px solid #45372b; }
+
+.info { display: flex; flex-direction: column; gap: 14px; min-width: 0; width: 100%; }
+.lv { font-family: var(--f-mono); font-weight: 700; font-size: 52px; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+.lv small { font-size: 18px; color: var(--muted); font-weight: 500; }
+.sname { font-family: var(--f-display); font-weight: 400; font-size: 26px; line-height: 1.15; margin: 4px 0 0; text-wrap: balance; }
+.tier { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .1em; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; margin-top: 8px; }
+
+.rates { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+.rate { background: var(--panel-2); border-radius: 10px; padding: 8px 10px; }
+.rate b { display: block; font-family: var(--f-mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.rate span { font-size: 11px; color: var(--muted); }
+.rate.s b { color: var(--ok); } .rate.f b { color: var(--fail); } .rate.d b { color: var(--boom); }
+.rate.off b { color: #5a4f46; }
+.note { font-size: 12px; color: var(--muted); margin: -4px 0 0; height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.actions { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+button { font-family: inherit; cursor: pointer; border: none; }
+button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gold); outline-offset: 2px; }
+.btn { border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 16px; display: flex; flex-direction: column; align-items: center; gap: 2px; transition: transform .08s, filter .15s; }
+.btn small { font-family: var(--f-mono); font-size: 12px; font-weight: 500; opacity: .85; }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.98); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-forge { background: linear-gradient(180deg, #ff9246, #e3561a); color: #1a0c04; box-shadow: 0 4px 0 #8f300a, 0 0 24px rgba(255,122,47,.25); }
+.btn-forge:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-sell { background: var(--panel-2); color: var(--gold); border: 1px solid #5a4528; }
+.pop-text { position: absolute; left: 0; right: 0; top: 38%; text-align: center; pointer-events: none; color: var(--gold); font-family: var(--f-display); line-height: 1.15; text-shadow: 0 2px 10px rgba(0,0,0,.85), 0 0 18px rgba(233,196,106,.45); opacity: 0; }
+.pop-text b { display: block; font-size: 28px; font-weight: 400; }
+.pop-text.ok { color: var(--ok); } .pop-text.fail { color: #d6dbe0; } .pop-text.boom { color: var(--boom); }
+.auto { display: grid; grid-template-columns: 40px minmax(0,1fr) 40px 1.3fr; gap: 8px; align-items: stretch; }
+.auto[hidden] { display: none; }
+.step { border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 20px; font-weight: 700; min-height: 44px; }
+.step:disabled { opacity: .35; cursor: not-allowed; }
+.auto-val { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #181310; border: 1px solid var(--line); border-radius: 10px; line-height: 1.1; }
+.auto-val small { font-size: 10px; color: var(--muted); letter-spacing: .08em; }
+.auto-val b { font-family: var(--f-mono); font-size: 18px; color: var(--gold); font-variant-numeric: tabular-nums; }
+.btn-auto { border-radius: 10px; background: #3a2c1c; color: var(--gold); border: 1px solid #5a4528; font-weight: 700; font-size: 15px; }
+.btn-auto:hover:not(:disabled) { background: #4a3822; }
+.btn-auto.running { background: var(--boom); color: #fff; border-color: var(--boom); }
+.btn-auto:disabled { opacity: .4; cursor: not-allowed; }
+.pop-text span { display: block; font-family: var(--f-mono); font-size: 15px; font-weight: 700; }
+.pop-text.show { animation: popfloat 1s ease-out forwards; }
+@keyframes popfloat { 0% { opacity: 0; transform: translateY(10px) scale(.9); } 15% { opacity: 1; transform: translateY(0) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+@media (prefers-reduced-motion: reduce) { .pop-text.show { animation: popfade 1s linear forwards; } @keyframes popfade { 0%,70% { opacity: 1; } 100% { opacity: 0; } } }
+
+.uses { display: flex; flex-wrap: wrap; gap: 8px; }
+.use input { position: absolute; opacity: 0; pointer-events: none; }
+.use label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); cursor: pointer; user-select: none; }
+.use label i { font-style: normal; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.use input:checked + label { border-color: var(--ember); background: rgba(255,122,47,.16); color: #ffd2b5; }
+.use input:disabled + label { opacity: .4; cursor: not-allowed; }
+
+/* shop */
+.shop { display: flex; flex-direction: column; gap: 7px; }
+.item { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: var(--panel-2); border-radius: 10px; }
+.ico { width: 36px; height: 36px; border-radius: 9px; background: #181310; border: 1px solid var(--line); display: grid; place-items: center; }
+.ico svg { width: 26px; height: 26px; display: block; }
+.item h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.item h3 em { font-style: normal; font-family: var(--f-mono); font-size: 11px; color: var(--muted); margin-left: 4px; }
+.item p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.buy { font-family: var(--f-mono); font-weight: 700; font-size: 13px; background: #3a2c1c; color: var(--gold); padding: 8px 10px; border-radius: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.buy:hover:not(:disabled) { background: #4a3822; }
+.buy:disabled { opacity: .35; cursor: not-allowed; }
+
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.stat { background: var(--panel-2); border-radius: 10px; padding: 8px 12px; }
+.stat b { display: block; font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11px; color: var(--muted); }
+.log { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-family: var(--f-mono); font-size: 12px; }
+.log li { padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.02); }
+.log .ok { color: var(--ok); } .log .fail { color: var(--fail); } .log .boom { color: var(--boom); } .log .sell, .log .saved { color: var(--gold); }
+.reset { margin-top: 14px; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 4px 0; }
+.reset.confirm { color: var(--boom); }
+
+/* modal */
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(8,6,5,.72); backdrop-filter: blur(3px); display: grid; place-items: center;
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.modal[hidden] { display: none; }
+.sheet { width: min(1080px, 100%); max-height: 100%; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; animation: rise .18s ease-out; }
+.sheet-sm { width: min(460px, 100%); }
+@keyframes rise { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.sheet-head h2 { font-family: var(--f-display); font-weight: 400; font-size: 26px; margin: 0; }
+.sheet-head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.close { background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+
+/* codex */
+.codex { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.card { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 8px; align-items: center; background: var(--panel-2); border: 1px solid transparent; border-radius: 12px; padding: 8px; }
+.card canvas { display: block; border-radius: 8px; background: #120e0b; }
+.card .n { font-family: var(--f-mono); font-weight: 700; font-size: 14px; color: var(--gold); }
+.card .nm { font-size: 13px; font-weight: 700; line-height: 1.25; }
+.card .meta { font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+.card .meta .d { color: var(--boom); }
+.card.locked { background: #1b1612; }
+.card.locked .n, .card.locked .nm { color: #6b5d50; }
+.card.locked .nm { letter-spacing: .2em; }
+.card.cur { border-color: var(--ember); box-shadow: 0 0 0 1px var(--ember), 0 0 18px rgba(255,122,47,.18); opacity: 1; }
+.card .got { font-size: 10px; color: var(--ok); margin-left: 4px; }
+
+@media (prefers-reduced-motion: reduce) { .stage.shake, .sheet { animation: none; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>칼 <span>강화</span> 대장간</h1>
+    </div>
+    <div class="head-right">
+      <button class="hbtn" id="openCodex" type="button">도감 <b id="codexCount"></b></button>
+      <button class="hbtn" id="openLog" type="button">기록</button>
+      <div class="gold-big" aria-label="보유 골드"><span class="coin"></span><span id="gold">0</span> G</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="forge">
+        <div class="stage" id="stage">
+          <canvas id="main" aria-label="현재 칼"></canvas>
+          <div class="anvil"></div>
+          <div class="pop-text" id="popText" aria-live="polite"></div>
+        </div>
+        <div class="info">
+          <div>
+            <div class="lv" id="lv">+0</div>
+            <h2 class="sname" id="sname">낡은 철검</h2>
+            <span class="tier" id="tier">무쇠</span>
+          </div>
+          <div class="rates">
+            <div class="rate s"><b id="rS">95%</b><span>성공</span></div>
+            <div class="rate f"><b id="rF">5%</b><span id="rFl">실패 (유지)</span></div>
+            <div class="rate d"><b id="rD">0%</b><span>파괴</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-forge" id="forge" type="button">강화하기<small id="cost">무료</small></button>
+            <button class="btn btn-sell" id="sell" type="button">판매<small id="price">0 G</small></button>
+          </div>
+          <div class="auto" id="autoRow" hidden>
+            <button class="step" id="autoMinus" type="button" aria-label="목표 강 낮추기">−</button>
+            <div class="auto-val"><small>목표</small><b id="autoTarget">+1</b></div>
+            <button class="step" id="autoPlus" type="button" aria-label="목표 강 올리기">+</button>
+            <button class="btn-auto" id="autoBtn" type="button">자동강화</button>
+          </div>
+          <div>
+            <p class="label">다음 강화에 사용</p>
+            <div class="uses" id="uses"></div>
+          </div>
+          <p class="note" id="note"></p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel shop-panel">
+      <p class="label">상점</p>
+      <div class="shop" id="shop"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="modal" id="codexModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="codexTitle">
+    <div class="sheet-head">
+      <div>
+        <h2 id="codexTitle">칼 도감</h2>
+        <p id="codexNote">강화에 성공해야 칼이 공개돼요</p>
+      </div>
+      <button class="close" type="button" data-close>닫기</button>
+    </div>
+    <div class="codex" id="codex"></div>
+  </div>
+</div>
+
+<div class="modal" id="logModal" hidden>
+  <div class="sheet sheet-sm" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+    <div class="sheet-head">
+      <h2 id="logTitle">기록</h2>
+      <button class="close" type="button" data-close>닫기</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="sBest">+0</b><span>최고 강화</span></div>
+      <div class="stat"><b id="sTries">0</b><span>강화 시도</span></div>
+      <div class="stat"><b id="sBroken">0</b><span>파괴된 칼</span></div>
+      <div class="stat"><b id="sEarned">0</b><span>총 판매액</span></div>
+    </div>
+    <ul class="log" id="log"></ul>
+    <button class="reset" id="reset" type="button">처음부터 다시 하기</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const NAMES = [
+    "낡은 철검", "단련된 철검", "날 선 철검", "병사의 장검", "기사의 장검",
+    "강철 롱소드", "푸른 강철검", "서리 칼날", "폭풍의 검", "청명검",
+    "미스릴 블레이드", "월광검", "성기사의 검", "수정 대검", "별빛 세이버",
+    "화염검 이그니스", "용린검", "지옥불 대검", "홍련의 용아", "화룡왕의 검",
+    "천공검 아스트라", "성운검", "신살검", "시공의 칼날", "혼돈을 가르는 자",
+    "창세검 제네시스"
+  ];
+  const TIERS = [
+    { name: "무쇠", color: "#a7adb4" }, { name: "강철", color: "#8fb8ff" },
+    { name: "미스릴", color: "#7fe9ff" }, { name: "화염", color: "#ff7a3a" },
+    { name: "천상", color: "#c6a2ff" }, { name: "창세", color: "#ffe9a8" }
+  ];
+  // 성공 확률 (n강 → n+1강)
+  const SUCC = [94,92,90,88,86, 84,82,80,75,70, 65,60,52,43,35, 27,18,10,8,6, 5,4,3,2,1];
+  // 파괴 확률 (15강부터)
+  const DEST = [0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 3,4,5,6,8, 10,12,15,18,22];
+  const MAX = 25;
+  const HIT_MS = 100;
+
+  const cost = n => n === 0 ? 0 : Math.round(20 * Math.pow(1.4, n) / 10) * 10;
+  const baseValue = n => n === 0 ? 0 : Math.round(15 * Math.pow(1.58, n) / 5) * 5;
+  const tierOf = L => L >= 25 ? 5 : Math.floor(L / 5);
+  const fmt = n => n.toLocaleString("ko-KR");
+  // 1~n강까지 성공 경로로 들어간 강화비 합 (실패한 시도 비용은 제외)
+  const pathCost = n => { let t = 0; for (let i = 0; i < n; i++) t += cost(i); return t; };
+  const dropFrom = () => 10 + Math.min(10, S.practice || 0);
+  // 아이템을 쓸 수 있는 마지막 목표 강 (예: 20 → 19강에서 20강으로 갈 때까지)
+  const LIMIT = { bless: 20, gbless: 20, keep: 22, guard: 23 };
+  const usable = (id, L) => L < LIMIT[id];
+  const active = (id, L) => S.use[id] && S.inv[id] > 0 && usable(id, L);
+
+  const ITEMS = [
+    { id: "bless", name: "축복의 주문서", desc: "다음 강화 성공 +10%p · 20강까지 사용", price: () => 300, use: true },
+    { id: "gbless", name: "대축복 주문서", desc: "다음 강화 성공 +25%p · 20강까지 사용", price: () => 2500, use: true },
+    { id: "keep", name: "하락 방지석", desc: "실패해도 단계 유지 · 22강까지 사용", price: () => 1200, use: true },
+    { id: "guard", name: "파괴 방지 부적", desc: "파괴를 막아줌 · 23강까지 사용", price: () => 12000, use: true },
+    { id: "whet", name: "장인의 숫돌", desc: "영구 성공 확률 +1%p", price: lv => Math.round(2000 * Math.pow(2.2, lv) / 100) * 100, perm: true, max: 5 },
+    { id: "merchant", name: "상인 인맥", desc: "영구 판매가 +10%", price: lv => Math.round(1500 * Math.pow(2, lv) / 100) * 100, perm: true, max: 5 },
+    { id: "practice", name: "강화 연습", desc: "", price: lv => Math.round(3000 * Math.pow(1.7, lv) / 100) * 100, perm: true, max: 10 }
+  ];
+  const ICONS = {
+    bless: '<svg viewBox="0 0 32 32"><rect x="8" y="5" width="16" height="22" rx="2" fill="#f1e2bf"/><rect x="6" y="4" width="20" height="4" rx="2" fill="#c9a24a"/><rect x="6" y="24" width="20" height="4" rx="2" fill="#c9a24a"/><path d="M12 13h8M12 17h8M12 21h5" stroke="#8a6a3a" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    gbless: '<svg viewBox="0 0 32 32"><rect x="8" y="5" width="16" height="22" rx="2" fill="#fff3c4"/><rect x="6" y="4" width="20" height="4" rx="2" fill="#e9c46a"/><rect x="6" y="24" width="20" height="4" rx="2" fill="#e9c46a"/><path d="M16 10l1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4z" fill="#ff9246"/></svg>',
+    keep: '<svg viewBox="0 0 32 32"><path d="M16 4l9 6v9l-9 9-9-9v-9z" fill="#5fd38d"/><path d="M16 4l9 6-9 5-9-5z" fill="#9ff0bf"/><path d="M16 15v13" stroke="#2f8f58" stroke-width="1.5"/><path d="M12 19l4-4 4 4" stroke="#14301f" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    guard: '<svg viewBox="0 0 32 32"><path d="M16 4l10 4v7c0 6.5-4.4 11-10 13-5.6-2-10-6.5-10-13V8z" fill="#c43a3a"/><path d="M16 7l7 3v5c0 4.8-3 8.2-7 9.8z" fill="#ff6b6b"/><path d="M12 16l3 3 5-6" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    whet: '<svg viewBox="0 0 32 32"><rect x="4" y="15" width="24" height="9" rx="3" fill="#7d8790"/><rect x="4" y="15" width="24" height="4" rx="2" fill="#a9b3bc"/><path d="M8 13L22 6" stroke="#dfe7ee" stroke-width="2.5" stroke-linecap="round"/><path d="M23 9l2-1M24 12l2 0" stroke="#ffd36a" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    merchant: '<svg viewBox="0 0 32 32"><path d="M11 9h10l-2-4h-6z" fill="#8a5a33"/><path d="M10 10c-4 4-5 9-3 13 1.5 3 4 4 9 4s7.5-1 9-4c2-4 1-9-3-13z" fill="#b07a3e"/><circle cx="16" cy="19" r="5" fill="#e9c46a"/><path d="M16 16v6M14.5 17.5h2.5a1 1 0 010 2h-2a1 1 0 000 2H17" stroke="#8a6a1a" stroke-width="1.2" fill="none"/></svg>',
+    practice: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="#3a2c1c" stroke="#e9c46a" stroke-width="2"/><circle cx="16" cy="16" r="6.5" fill="none" stroke="#ff9246" stroke-width="2"/><circle cx="16" cy="16" r="2.4" fill="#ff9246"/><path d="M24 8l-6 6" stroke="#f1e8dc" stroke-width="2" stroke-linecap="round"/><path d="M22 6l4 0 0 4" stroke="#f1e8dc" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  const fresh = () => ({
+    gold: 1000, lv: 0, best: 0, tries: 0, broken: 0, earned: 0,
+    whet: 0, merchant: 0, practice: 0,
+    inv: { bless: 0, gbless: 0, keep: 0, guard: 0 },
+    use: { bless: false, gbless: false, keep: false, guard: false },
+    log: []
+  });
+  const KEY = "sword-forge-v1";
+  let S = fresh();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      S = Object.assign(fresh(), JSON.parse(raw));
+      if (typeof S.best !== "number" || S.lv > MAX) S = fresh();
+    }
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+  const swordValue = n => Math.round(baseValue(n) * (1 + 0.1 * S.merchant));
+  // 판매가 = 칼값 + 1~현재 강까지의 강화비 (실패한 시도 비용은 돌려주지 않음)
+  const sellValue = n => n === 0 ? 0 : swordValue(n) + pathCost(n);
+
+  function rates(n) {
+    if (n >= MAX) return { s: 0, f: 0, d: 0 };
+    let s = SUCC[n] + S.whet;
+    if (active("bless", n)) s += 10;
+    if (active("gbless", n)) s += 25;
+    s = Math.min(s, 100);
+    let d = DEST[n];
+    if (s + d > 100) d = 100 - s;
+    return { s, d, f: 100 - s - d };
+  }
+
+  /* ---------- 칼 그리기 ---------- */
+  function hslRgb(h, s, l) {
+    s /= 100; l /= 100;
+    const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+    const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+  }
+  const hexRgb = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+  const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+  function palette(L, t) {
+    const tier = tierOf(L);
+    const P = [
+      { edge: "#5d6168", core: "#c6cacf", guard: "#6e5942", grip: "#3d2c1e", glow: "#c9ced4", gem: "#9aa3ab", trim: "#8a7258" },
+      { edge: "#4f6f96", core: "#eef5fb", guard: "#c9a24a", grip: "#2c2340", glow: "#8fb8ff", gem: "#4f8cff", trim: "#e3c06a" },
+      { edge: "#2f9fbd", core: "#f4feff", guard: "#dfe9f3", grip: "#1d3b4a", glow: "#7fe9ff", gem: "#5ff0ff", trim: "#a8f3ff" },
+      { edge: "#b8261a", core: "#ffd38a", guard: "#3a1a12", grip: "#1a0d0a", glow: "#ff6a2a", gem: "#ff2d2d", trim: "#ffb347" },
+      { edge: "#6a35e8", core: "#fff3c4", guard: "#f2cf6e", grip: "#2a1a50", glow: "#b98cff", gem: "#ffffff", trim: "#ffe9a8" }
+    ];
+    if (tier < 5) {
+      const p = P[tier];
+      return Object.assign({}, p, { glowRGB: hexRgb(p.glow), gemRGB: hexRgb(p.gem) });
+    }
+    const h = (t * 60) % 360;
+    return {
+      edge: `hsl(${h},90%,58%)`, core: "#ffffff", guard: "#fff1c2", grip: "#3b2a10",
+      trim: `hsl(${(h + 60) % 360},100%,75%)`,
+      glowRGB: hslRgb((h + 40) % 360, 100, 70), gemRGB: hslRgb((h + 180) % 360, 100, 70)
+    };
+  }
+
+  function bladeShape(cx, baseY, len, bw, tier) {
+    const N = 32, tipLen = len * 0.14, pts = [];
+    for (let i = 0; i <= N; i++) {
+      const s = i / N;
+      const y = baseY - s * (len - tipLen);
+      let hw = bw / 2 * (1 - 0.18 * s);
+      if (tier >= 4) hw *= 1 + 0.2 * Math.sin(s * Math.PI);
+      if (tier === 3) hw += Math.sin(s * Math.PI * 7) * bw * 0.07;
+      pts.push([hw, y]);
+    }
+    return { pts, tipY: baseY - len };
+  }
+
+  const geom = (L, W, H) => ({ cx: W / 2, guardY: H * 0.70, len: H * (0.42 + 0.2 * L / 25), bw: W * (0.09 + 0.08 * L / 25) });
+
+  function drawSword(ctx, L, W, H, t) {
+    const tier = tierOf(L), p = L / 25, k = W / 240;
+    const C = palette(L, t);
+    const { cx, guardY, len, bw } = geom(L, W, H);
+    const gripLen = H * 0.14;
+
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+
+    // 오라
+    if (L >= 5) {
+      const a = Math.min(.75, 0.08 + 0.32 * p) * (0.85 + 0.15 * Math.sin(t * 2.2));
+      const r = len * (0.45 + 0.5 * p);
+      const g = ctx.createRadialGradient(cx, guardY - len * 0.5, 0, cx, guardY - len * 0.5, r);
+      g.addColorStop(0, rgba(C.glowRGB, a));
+      g.addColorStop(1, rgba(C.glowRGB, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // 후광 (20강+)
+    if (L >= 20) {
+      const hy = guardY - len * 0.62, hr = len * 0.36;
+      const rings = L >= 25 ? 2 : 1;
+      for (let r = 0; r < rings; r++) {
+        const rad = hr * (1 + r * 0.28), dir = r ? -1 : 1;
+        ctx.strokeStyle = rgba(C.glowRGB, 0.45 - r * 0.15);
+        ctx.lineWidth = 1.5 * k;
+        ctx.beginPath(); ctx.arc(cx, hy, rad, 0, Math.PI * 2); ctx.stroke();
+        const n = 16 + (L - 20) * 2;
+        for (let i = 0; i < n; i++) {
+          const ang = (i / n) * Math.PI * 2 + t * 0.4 * dir;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(ang) * rad, hy + Math.sin(ang) * rad);
+          ctx.lineTo(cx + Math.cos(ang) * (rad + 6 * k), hy + Math.sin(ang) * (rad + 6 * k));
+          ctx.stroke();
+        }
+      }
+      if (L >= 25) {
+        ctx.save();
+        ctx.translate(cx, hy);
+        ctx.rotate(t * 0.15);
+        for (let i = 0; i < 12; i++) {
+          ctx.rotate(Math.PI / 6);
+          const gr = ctx.createLinearGradient(0, 0, 0, -hr * 2.2);
+          gr.addColorStop(0, rgba(C.glowRGB, 0.25)); gr.addColorStop(1, rgba(C.glowRGB, 0));
+          ctx.fillStyle = gr;
+          ctx.beginPath(); ctx.moveTo(-3 * k, 0); ctx.lineTo(3 * k, 0); ctx.lineTo(0, -hr * 2.2); ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // 칼날
+    const { pts, tipY } = bladeShape(cx, guardY, len, bw, tier);
+    const path = new Path2D();
+    path.moveTo(cx - pts[0][0], pts[0][1]);
+    for (const [hw, y] of pts) path.lineTo(cx - hw, y);
+    path.lineTo(cx, tipY);
+    for (let i = pts.length - 1; i >= 0; i--) path.lineTo(cx + pts[i][0], pts[i][1]);
+    path.closePath();
+
+    const bg = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+    bg.addColorStop(0, C.edge); bg.addColorStop(0.48, C.core); bg.addColorStop(0.52, C.core); bg.addColorStop(1, C.edge);
+    ctx.save();
+    if (L >= 5) {
+      ctx.shadowColor = rgba(C.glowRGB, 0.9);
+      ctx.shadowBlur = (6 + 30 * p) * k * (1 + 0.15 * Math.sin(t * 3));
+    }
+    ctx.fillStyle = bg;
+    ctx.fill(path);
+    ctx.restore();
+
+    ctx.save();
+    ctx.clip(path);
+    if (L <= 1) {
+      const spots = L === 0 ? 9 : 4;
+      for (let i = 0; i < spots; i++) {
+        const sx = cx + Math.sin(i * 12.9) * bw * 0.35;
+        const sy = guardY - ((i * 0.137 + 0.08) % 0.9) * len;
+        ctx.fillStyle = "rgba(122,72,34,0.55)";
+        ctx.beginPath(); ctx.arc(sx, sy, (2 + (i % 3)) * k, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (L >= 3) {
+      ctx.strokeStyle = "rgba(0,0,0,0.22)";
+      ctx.lineWidth = bw * 0.14;
+      ctx.beginPath(); ctx.moveTo(cx, guardY - 4 * k); ctx.lineTo(cx, guardY - len * 0.62); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1 * k;
+      ctx.beginPath(); ctx.moveTo(cx + bw * 0.05, guardY - 4 * k); ctx.lineTo(cx + bw * 0.05, guardY - len * 0.62); ctx.stroke();
+    }
+    if (L >= 20) {
+      ctx.strokeStyle = rgba(C.glowRGB, 0.5);
+      ctx.lineWidth = 1 * k;
+      ctx.beginPath();
+      for (let i = 0; i < pts.length; i++) { const [hw, y] = pts[i]; i ? ctx.lineTo(cx - hw * 0.6, y) : ctx.moveTo(cx - hw * 0.6, y); }
+      ctx.lineTo(cx, tipY + len * 0.08);
+      for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(cx + pts[i][0] * 0.6, pts[i][1]);
+      ctx.stroke();
+      for (let j = 0; j < 6; j++) {
+        const y = guardY - len * (0.12 + 0.105 * j), s = bw * 0.13;
+        ctx.strokeStyle = rgba(C.glowRGB, 0.55 + 0.45 * Math.sin(t * 4 + j));
+        ctx.lineWidth = 1.4 * k;
+        ctx.beginPath();
+        ctx.moveTo(cx, y - s); ctx.lineTo(cx + s, y); ctx.lineTo(cx, y + s); ctx.lineTo(cx - s, y); ctx.closePath();
+        if (j % 2) { ctx.moveTo(cx - s * 1.6, y); ctx.lineTo(cx + s * 1.6, y); }
+        ctx.stroke();
+      }
+    }
+    if (L >= 8) {
+      const sweep = ((t * 0.35) % 1.6) - 0.3;
+      const sy = guardY - sweep * len;
+      const sg = ctx.createLinearGradient(0, sy - 20 * k, 0, sy + 20 * k);
+      sg.addColorStop(0, "rgba(255,255,255,0)"); sg.addColorStop(0.5, "rgba(255,255,255,0.45)"); sg.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = sg;
+      ctx.fillRect(0, sy - 20 * k, W, 40 * k);
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.lineWidth = 1 * k;
+    ctx.stroke(path);
+
+    // 손잡이
+    const gh = Math.max(4 * k, H * (0.022 + 0.012 * p));
+    const gripW = Math.max(6 * k, bw * 0.45);
+    const gy0 = guardY + gh / 2;
+    ctx.fillStyle = C.grip;
+    ctx.fillRect(cx - gripW / 2, gy0, gripW, gripLen);
+    ctx.strokeStyle = tier >= 1 ? C.trim : "rgba(255,255,255,0.12)";
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 1.2 * k;
+    for (let y = gy0 + 3 * k; y < gy0 + gripLen; y += 6 * k) {
+      ctx.beginPath(); ctx.moveTo(cx - gripW / 2, y); ctx.lineTo(cx + gripW / 2, y + 4 * k); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    const pr = gripW * 0.85;
+    const py = gy0 + gripLen + pr * 0.6;
+    ctx.fillStyle = C.guard;
+    ctx.beginPath(); ctx.arc(cx, py, pr, 0, Math.PI * 2); ctx.fill();
+    if (L >= 10) {
+      ctx.fillStyle = rgba(C.gemRGB, 1);
+      ctx.beginPath(); ctx.arc(cx, py, pr * 0.45, 0, Math.PI * 2); ctx.fill();
+    }
+
+    const gw = W * (0.26 + 0.32 * p);
+    if (L >= 16) {
+      ctx.fillStyle = C.trim;
+      for (const side of [-1, 1]) {
+        const layers = L >= 21 ? 2 : 1;
+        for (let l = 0; l < layers; l++) {
+          const sc = 1 - l * 0.3;
+          ctx.globalAlpha = 0.9 - l * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(cx + side * gw * 0.12, guardY);
+          ctx.quadraticCurveTo(cx + side * gw * 0.45 * sc, guardY - H * 0.02, cx + side * gw * 0.66 * sc, guardY - H * (0.1 + l * 0.04));
+          ctx.quadraticCurveTo(cx + side * gw * 0.42 * sc, guardY - H * 0.005, cx + side * gw * 0.35 * sc, guardY + gh * 0.6);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.fillStyle = C.guard;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(cx - gw / 2, guardY - gh / 2, gw, gh, gh / 2) : ctx.rect(cx - gw / 2, guardY - gh / 2, gw, gh);
+    ctx.fill();
+    if (tier >= 1) { ctx.strokeStyle = C.trim; ctx.lineWidth = 1 * k; ctx.stroke(); }
+    if (L >= 13) {
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = C.guard;
+        ctx.beginPath(); ctx.arc(cx + side * gw / 2, guardY - gh * 0.3, gh * 0.85, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = rgba(C.gemRGB, 0.9);
+        ctx.beginPath(); ctx.arc(cx + side * gw / 2, guardY - gh * 0.3, gh * 0.4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (L >= 10) {
+      const r = gh * (1 + 0.5 * p);
+      ctx.save();
+      ctx.shadowColor = rgba(C.gemRGB, 1); ctx.shadowBlur = 10 * k;
+      const gg = ctx.createRadialGradient(cx - r * 0.3, guardY - r * 0.3, 0, cx, guardY, r);
+      gg.addColorStop(0, "#ffffff"); gg.addColorStop(0.35, rgba(C.gemRGB, 1)); gg.addColorStop(1, rgba(C.gemRGB.map(v => v * 0.45), 1));
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(cx, guardY, r, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    if (L >= 8) {
+      const s = (5 + 10 * p) * k * (0.7 + 0.3 * Math.sin(t * 5));
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.beginPath();
+      ctx.moveTo(cx, tipY - s); ctx.lineTo(cx + s * 0.18, tipY - s * 0.18); ctx.lineTo(cx + s, tipY);
+      ctx.lineTo(cx + s * 0.18, tipY + s * 0.18); ctx.lineTo(cx, tipY + s); ctx.lineTo(cx - s * 0.18, tipY + s * 0.18);
+      ctx.lineTo(cx - s, tipY); ctx.lineTo(cx - s * 0.18, tipY - s * 0.18); ctx.closePath(); ctx.fill();
+    }
+
+    if (L >= 12) {
+      const n = Math.min(32, (L - 10) * 2);
+      for (let i = 0; i < n; i++) {
+        const sp = 0.18 + (i % 5) * 0.03;
+        const ph = (t * sp + i * 0.618) % 1;
+        const y = guardY - ph * len * 1.15;
+        const x = cx + Math.sin(i * 7.3 + t * 1.3) * bw * (0.9 + (i % 3) * 0.45);
+        const a = Math.sin(ph * Math.PI);
+        const sz = (1.4 + (i % 3)) * k;
+        let col;
+        if (tier === 2) col = [200, 245, 255];
+        else if (tier === 3) col = i % 2 ? [255, 140, 50] : [255, 210, 90];
+        else if (tier === 4) col = i % 2 ? [255, 236, 170] : C.glowRGB;
+        else col = hslRgb((i * 40 + t * 80) % 360, 100, 72);
+        ctx.fillStyle = rgba(col, a);
+        if (tier >= 4) {
+          ctx.beginPath();
+          ctx.moveTo(x, y - sz * 2); ctx.lineTo(x + sz * 0.5, y); ctx.lineTo(x, y + sz * 2); ctx.lineTo(x - sz * 0.5, y); ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x - sz * 2, y); ctx.lineTo(x, y + sz * 0.5); ctx.lineTo(x + sz * 2, y); ctx.lineTo(x, y - sz * 0.5); ctx.closePath(); ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  // 망치 + 번쩍
+  function drawHit(ctx, L, W, H, e) {
+    const { cx, guardY, len, bw } = geom(L, W, H);
+    const k = W / 240;
+    const iy = guardY - len * 0.5, ix = cx + bw * 0.5;
+    const px = W - 14 * k, py = iy;
+    const hl = px - ix - 16 * k;
+    const ang = e < 0.5 ? 0.9 * (1 - e / 0.5) : 0.12 * Math.sin((e - 0.5) * Math.PI * 2);
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(ang);
+    const hg = ctx.createLinearGradient(0, -5 * k, 0, 5 * k);
+    hg.addColorStop(0, "#8a5a33"); hg.addColorStop(1, "#4a2e18");
+    ctx.fillStyle = hg;
+    ctx.fillRect(-hl, -5 * k, hl + 14 * k, 10 * k);
+    const hx = -hl - 16 * k;
+    const mg = ctx.createLinearGradient(hx, 0, hx + 32 * k, 0);
+    mg.addColorStop(0, "#5b6066"); mg.addColorStop(0.5, "#c9ced4"); mg.addColorStop(1, "#4a4f55");
+    ctx.fillStyle = mg;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(hx, -24 * k, 32 * k, 48 * k, 4 * k) : ctx.rect(hx, -24 * k, 32 * k, 48 * k);
+    ctx.fill();
+    ctx.restore();
+
+    if (e >= 0.4) {
+      const f = 1 - (e - 0.4) / 0.6;
+      const r = (18 + (1 - f) * 40) * k;
+      const g = ctx.createRadialGradient(ix, iy, 0, ix, iy, r * 2.2);
+      g.addColorStop(0, `rgba(255,255,235,${0.95 * f})`);
+      g.addColorStop(0.35, `rgba(255,210,120,${0.6 * f})`);
+      g.addColorStop(1, "rgba(255,160,60,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = `rgba(255,255,255,${f})`;
+      ctx.beginPath();
+      for (let i = 0; i < 16; i++) {
+        const a = i / 16 * Math.PI * 2;
+        const rr = i % 2 ? r * 0.35 : r * (1 + (i % 4 === 0 ? 0.5 : 0));
+        ctx.lineTo(ix + Math.cos(a) * rr, iy + Math.sin(a) * rr);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  /* ---------- 캔버스 ---------- */
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  function setup(c, w, h) {
+    c.width = w * DPR; c.height = h * DPR;
+    c.style.width = w + "px"; c.style.height = h + "px";
+    const ctx = c.getContext("2d");
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    return ctx;
+  }
+  const MW = 240, MH = 400;
+  const mctx = setup(document.getElementById("main"), MW, MH);
+  const RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 이펙트 ---------- */
+  let fx = null;   // { type, start, level, shards }
+  let busy = false;
+
+  function makeShards(L) {
+    const C = palette(L, 0), arr = [];
+    const { cx, guardY, len, bw } = geom(L, MW, MH);
+    for (let i = 0; i < 26; i++) {
+      arr.push({
+        x: cx + (Math.random() - .5) * bw, y: guardY - Math.random() * len,
+        vx: (Math.random() - .5) * 7, vy: -Math.random() * 5 - 1,
+        r: Math.random() * 6, vr: (Math.random() - .5) * .4,
+        s: 5 + Math.random() * 12, c: i % 3 ? C.core : C.edge
+      });
+    }
+    return arr;
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(50, now - last) / 16.67; last = now;
+    const t = RM ? 0.5 : now / 1000;
+    if (fx && fx.type === "boom" && now - fx.start < 1100) {
+      mctx.clearRect(0, 0, MW, MH);
+      const e = (now - fx.start) / 1100;
+      mctx.fillStyle = `rgba(255,90,60,${Math.max(0, 0.5 - e)})`;
+      mctx.fillRect(0, 0, MW, MH);
+      for (const s of fx.shards) {
+        s.vy += 0.25 * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.r += s.vr * dt;
+        if (s.y > MH - 30) { s.y = MH - 30; s.vy *= -0.3; s.vx *= 0.7; }
+        mctx.save();
+        mctx.translate(s.x, s.y); mctx.rotate(s.r);
+        mctx.globalAlpha = 1 - e * 0.6;
+        mctx.fillStyle = s.c;
+        mctx.beginPath(); mctx.moveTo(0, -s.s / 2); mctx.lineTo(s.s / 3, s.s / 2); mctx.lineTo(-s.s / 3, s.s / 3); mctx.closePath(); mctx.fill();
+        mctx.restore();
+      }
+    } else {
+      if (fx && fx.type === "boom") fx = null;
+      const L = fx && fx.type === "hit" ? fx.level : S.lv;
+      drawSword(mctx, L, MW, MH, t);
+      if (fx && fx.type === "hit") {
+        const e = Math.min(1, (now - fx.start) / HIT_MS);
+        drawHit(mctx, L, MW, MH, e);
+      } else if (fx && fx.type === "up" && now - fx.start < 450) {
+        const e = (now - fx.start) / 450;
+        mctx.strokeStyle = `rgba(255,230,160,${1 - e})`;
+        mctx.lineWidth = 3;
+        mctx.beginPath(); mctx.arc(MW / 2, MH * 0.45, 20 + e * 160, 0, Math.PI * 2); mctx.stroke();
+        mctx.fillStyle = `rgba(255,255,255,${0.3 * (1 - e)})`;
+        mctx.fillRect(0, 0, MW, MH);
+      } else if (fx && fx.type === "fail" && now - fx.start < 350) {
+        mctx.fillStyle = `rgba(20,16,13,${0.5 * (1 - (now - fx.start) / 350)})`;
+        mctx.fillRect(0, 0, MW, MH);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- UI ---------- */
+  const $ = id => document.getElementById(id);
+  const stage = $("stage");
+
+  function popText(title, sub = "", cls = "") {
+    const el = $("popText");
+    el.className = "pop-text " + cls;
+    el.innerHTML = `<b>${title}</b>${sub ? `<span>${sub}</span>` : ""}`;
+    void el.offsetWidth; el.classList.add("show");
+  }
+  // 자동강화 중에는 한 번씩의 결과 문구는 띄우지 않음
+  function setResult(title, cls, sub) { if (!auto) popText(title, sub, cls); }
+  function addLog(text, cls) { S.log.unshift({ text, cls }); S.log = S.log.slice(0, 7); }
+  function shake() { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
+
+  const usesEl = $("uses");
+  ITEMS.filter(i => i.use).forEach(it => {
+    const d = document.createElement("div");
+    d.className = "use";
+    d.innerHTML = `<input type="checkbox" id="use-${it.id}"><label for="use-${it.id}">${it.name}<i id="cnt-${it.id}">×0</i></label>`;
+    usesEl.appendChild(d);
+    d.querySelector("input").addEventListener("change", e => { S.use[it.id] = e.target.checked; save(); render(); });
+  });
+
+  const shopEl = $("shop");
+  ITEMS.forEach(it => {
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `<span class="ico" aria-hidden="true">${ICONS[it.id]}</span><div style="min-width:0"><h3>${it.name}<em id="own-${it.id}"></em></h3><p id="desc-${it.id}">${it.desc}</p></div><button class="buy" type="button" id="buy-${it.id}"></button>`;
+    shopEl.appendChild(d);
+    d.querySelector("button").addEventListener("click", () => buy(it));
+  });
+  function buy(it) {
+    const lv = it.perm ? S[it.id] : 0;
+    if (it.perm && lv >= it.max) return;
+    const pr = it.price(lv);
+    if (S.gold < pr) return;
+    S.gold -= pr;
+    if (it.perm) S[it.id]++; else S.inv[it.id]++;
+    save(); render();
+  }
+
+  const codexEl = $("codex");
+  const cards = [];
+  for (let n = 1; n <= MAX; n++) {
+    const d = document.createElement("div");
+    d.className = "card";
+    const c = document.createElement("canvas");
+    d.appendChild(c);
+    const body = document.createElement("div");
+    body.style.minWidth = "0";
+    body.innerHTML = `<div class="n">+${n}</div><div class="nm"></div><div class="meta"></div>`;
+    d.appendChild(body);
+    codexEl.appendChild(d);
+    cards.push({ el: d, ctx: setup(c, 56, 96), nm: body.querySelector(".nm"), meta: body.querySelector(".meta"), state: null });
+  }
+  function paintCard(n, open) {
+    const cd = cards[n - 1];
+    if (cd.state === open) return;
+    cd.state = open;
+    drawSword(cd.ctx, n, 56, 96, 0.4);
+    if (!open) {
+      cd.ctx.save();
+      cd.ctx.globalCompositeOperation = "source-in";
+      cd.ctx.fillStyle = "#2c241d";
+      cd.ctx.fillRect(0, 0, 56, 96);
+      cd.ctx.restore();
+      cd.ctx.fillStyle = "#6b5d50";
+      cd.ctx.font = "700 20px 'JetBrains Mono', monospace";
+      cd.ctx.textAlign = "center"; cd.ctx.textBaseline = "middle";
+      cd.ctx.fillText("?", 28, 40);
+    }
+    cd.el.classList.toggle("locked", !open);
+    cd.nm.textContent = open ? NAMES[n] : "???";
+    cd.meta.innerHTML = !open ? "아직 얻지 못한 칼"
+      : n < MAX
+        ? `성공 ${SUCC[n]}%${DEST[n] ? ` · <span class="d">파괴 ${DEST[n]}%</span>` : ""}<br>비용 ${fmt(cost(n))} · 판매 ${fmt(baseValue(n) + pathCost(n))}`
+        : `최종 단계<br>판매 ${fmt(baseValue(n) + pathCost(n))}`;
+  }
+
+  // 펼치는 창
+  let lastFocus = null;
+  function openModal(id) {
+    lastFocus = document.activeElement;
+    const m = $(id); m.hidden = false;
+    m.querySelector("[data-close]").focus({ preventScroll: true });
+  }
+  function closeModals() {
+    document.querySelectorAll(".modal").forEach(m => { m.hidden = true; });
+    if (lastFocus) lastFocus.focus({ preventScroll: true });
+  }
+  $("openCodex").addEventListener("click", () => openModal("codexModal"));
+  $("openLog").addEventListener("click", () => openModal("logModal"));
+  document.querySelectorAll(".modal").forEach(m => {
+    m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) closeModals(); });
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModals(); });
+
+  function render() {
+    const L = S.lv, r = rates(L), tier = TIERS[tierOf(L)];
+    $("gold").textContent = fmt(S.gold);
+    $("lv").innerHTML = `+${L}<small> / ${MAX}</small>`;
+    $("sname").textContent = NAMES[L];
+    const tEl = $("tier"); tEl.textContent = tier.name + " 등급"; tEl.style.color = tier.color;
+
+    const done = L >= MAX;
+    $("rS").textContent = done ? "—" : r.s + "%";
+    $("rF").textContent = done ? "—" : r.f + "%";
+    $("rD").textContent = done ? "—" : r.d + "%";
+    $("rFl").textContent = L >= dropFrom() ? (active("keep", L) ? "실패 (방지석)" : "실패 (-1강)") : "실패 (유지)";
+    document.querySelector(".rate.d").classList.toggle("off", r.d === 0);
+
+    let note = "";
+    if (done) note = "최종 단계 도달! 팔아서 큰돈을 벌어 보세요.";
+    else if (r.d > 0 && active("guard", L)) note = "파괴 방지 부적이 칼을 지켜줍니다.";
+    else if (L === 14) note = "다음 단계부터 파괴 위험이 생깁니다.";
+    else if (S.whet) note = `장인의 숫돌로 성공 +${S.whet}%p 적용 중`;
+    $("note").textContent = note;
+
+    const c = cost(L);
+    $("cost").textContent = done ? "최대" : (c === 0 ? "무료" : fmt(c) + " G");
+    $("forge").disabled = busy || !!auto || done || S.gold < c;
+    $("autoRow").hidden = !autoOpen();
+    const aDone = L >= AUTO_MAX;
+    const at = autoTarget();
+    $("autoTarget").textContent = aDone ? "—" : "+" + at;
+    $("autoMinus").disabled = aDone || at <= L + 1;
+    $("autoPlus").disabled = aDone || at >= AUTO_MAX;
+    const ab = $("autoBtn");
+    ab.disabled = aDone || busy || S.gold < c;
+    ab.title = aDone ? `자동강화는 ${AUTO_MAX}강까지만 돼요` : "";
+    const sellBtn = $("sell");
+    $("price").textContent = fmt(sellValue(L)) + " G";
+    sellBtn.disabled = busy || !!auto || L === 0;
+
+    ITEMS.filter(i => i.use).forEach(it => {
+      const cnt = S.inv[it.id];
+      if (cnt === 0) S.use[it.id] = false;
+      const inp = $("use-" + it.id);
+      const ok = usable(it.id, L);
+      inp.checked = S.use[it.id] && ok;
+      inp.disabled = cnt === 0 || !ok;
+      inp.parentElement.title = ok ? "" : `${LIMIT[it.id]}강까지만 쓸 수 있어요`;
+      $("cnt-" + it.id).textContent = ok ? "×" + cnt : `${LIMIT[it.id]}강까지`;
+    });
+    ITEMS.forEach(it => {
+      const lv = it.perm ? S[it.id] : 0;
+      const b = $("buy-" + it.id);
+      const maxed = it.perm && lv >= it.max;
+      const pr = it.price(lv);
+      b.textContent = maxed ? "최대" : fmt(pr) + " G";
+      b.disabled = maxed || S.gold < pr;
+      $("own-" + it.id).textContent = it.perm ? `Lv.${lv}/${it.max}` : `보유 ${S.inv[it.id]}`;
+    });
+    $("desc-practice").textContent = (S.practice || 0) >= 10 ? "최대: 20강부터 실패 시 하락" : `실패 하락 시작 ${dropFrom()}강 → ${dropFrom() + 1}강`;
+
+    $("sBest").textContent = "+" + S.best;
+    $("sTries").textContent = fmt(S.tries);
+    $("sBroken").textContent = fmt(S.broken);
+    $("sEarned").textContent = fmt(S.earned);
+    $("log").innerHTML = S.log.map(l => `<li class="${l.cls}">${l.text}</li>`).join("") || `<li style="color:var(--muted)">아직 기록이 없어요</li>`;
+
+    cards.forEach((cd, i) => {
+      const n = i + 1;
+      paintCard(n, n <= S.best);
+      cd.el.classList.toggle("cur", n === L);
+    });
+    $("codexCount").textContent = `${S.best}/${MAX}`;
+    $("codexNote").textContent = `강화에 성공해야 칼이 공개돼요 · 확률은 다음 단계로 강화할 때 기준 · ${dropFrom()}강부터 실패 시 1단계 하락`;
+  }
+
+  let auto = null; // 자동강화는 즉시 계산하므로 진행 중 상태는 없음
+
+  // 한 번의 강화 결과 처리. show=false면 연출·문구·기록 없이 상태만 바꿈
+  function resolve(L, r, show) {
+    const roll = Math.random() * 100;
+    if (roll < r.s) {
+      S.lv++;
+      S.best = Math.max(S.best, S.lv);
+      if (show) {
+        fx = { type: "up", start: performance.now() };
+        setResult("성공!", "ok", `+${S.lv} ${NAMES[S.lv]}`);
+        addLog(`+${L} → +${S.lv} 성공`, "ok");
+      }
+      return "up";
+    }
+    if (roll < r.s + r.d) {
+      if (active("guard", L)) {
+        S.inv.guard--;
+        if (show) {
+          fx = { type: "fail", start: performance.now() };
+          setResult("부적 방어!", "", "파괴를 막았어요");
+          addLog(`+${L} 파괴 → 부적 방어`, "saved");
+        }
+        return "saved";
+      }
+      const scrap = Math.round(swordValue(L) * 0.05);
+      S.gold += scrap;
+      S.broken++;
+      S.lv = 0;
+      if (show) {
+        fx = { type: "boom", start: performance.now(), shards: makeShards(L) };
+        shake();
+        setResult("파괴…", "boom", `파편 +${fmt(scrap)} G`);
+        addLog(`+${L} 파괴됨`, "boom");
+      }
+      return "boom";
+    }
+    if (show) { shake(); fx = { type: "fail", start: performance.now() }; }
+    if (L >= dropFrom()) {
+      if (active("keep", L)) {
+        S.inv.keep--;
+        if (show) { setResult("실패", "fail", "방지석으로 유지"); addLog(`+${L} 실패 (유지)`, "fail"); }
+      } else {
+        S.lv--;
+        if (show) { setResult("실패", "fail", `+${S.lv}로 하락`); addLog(`+${L} → +${S.lv} 하락`, "fail"); }
+      }
+    } else if (show) {
+      setResult("실패", "fail", "단계 유지");
+      addLog(`+${L} 실패`, "fail");
+    }
+    return "fail";
+  }
+
+  // 비용 지불 + 축복 주문서 소모. 확률은 소모 전에 계산
+  function pay(L) {
+    const c = cost(L);
+    const r = rates(L);
+    S.gold -= c;
+    S.tries++;
+    if (active("bless", L)) S.inv.bless--;
+    if (active("gbless", L)) S.inv.gbless--;
+    return { c, r };
+  }
+
+  function enhance() {
+    const L = S.lv;
+    if (busy || L >= MAX) return;
+    if (S.gold < cost(L)) { setResult("골드가 부족해요", "fail"); return; }
+    const { r } = pay(L);
+    busy = true;
+    fx = { type: "hit", start: performance.now(), level: L };
+    render();
+    setTimeout(() => {
+      resolve(L, r, true);
+      busy = false;
+      save(); render();
+    }, HIT_MS);
+  }
+
+  /* 자동강화: 모션 없이 목표까지 한 번에 계산 */
+  // 자동강화: 20강을 한 번이라도 찍어야 열리고, 목표는 최대 15강
+  const AUTO_UNLOCK = 20, AUTO_MAX = 15;
+  const autoOpen = () => S.best >= AUTO_UNLOCK;
+  const autoTarget = () => Math.min(AUTO_MAX, Math.max(S.lv + 1, S.autoT || S.lv + 1));
+  function runAuto() {
+    if (busy || !autoOpen() || S.lv >= AUTO_MAX) return;
+    const target = autoTarget();
+    S.autoT = target;
+    const from = S.lv;
+    let n = 0, spent = 0, out = "", lastL = from;
+    while (S.lv < target && n < 100000) {
+      const L = S.lv;
+      if (S.gold < cost(L)) { out = "gold"; break; }
+      const { c, r } = pay(L);
+      n++; spent += c; lastL = L;
+      if (resolve(L, r, false) === "boom") { out = "boom"; break; }
+    }
+    const tail = `${n}회 · -${fmt(spent)} G`;
+    if (S.lv >= target) {
+      fx = null;
+      popText(`+${S.lv}`, tail, "ok");
+      addLog(`자동 +${from} → +${S.lv} (${n}회)`, "ok");
+    } else if (out === "boom") {
+      fx = null;
+      popText("파괴…", `+${lastL} · ${tail}`, "boom");
+      addLog(`자동 중 +${lastL} 파괴 (${n}회)`, "boom");
+    } else {
+      fx = null;
+      popText(`+${S.lv} 골드 부족`, tail, "fail");
+      addLog(`자동 +${from} → +${S.lv} 골드 부족`, "fail");
+    }
+    save(); render();
+  }
+  $("autoBtn").addEventListener("click", runAuto);
+  $("autoMinus").addEventListener("click", () => { S.autoT = Math.max(S.lv + 1, autoTarget() - 1); save(); render(); });
+  $("autoPlus").addEventListener("click", () => { S.autoT = Math.min(AUTO_MAX, autoTarget() + 1); save(); render(); });
+
+  function sell() {
+    if (busy || auto || S.lv === 0) return;
+    const v = sellValue(S.lv);
+    S.gold += v; S.earned += v;
+    addLog(`+${S.lv} 판매 +${fmt(v)}G`, "sell");
+    popText("판매 완료!", `판매가 ${fmt(v)}G`);
+    fx = null;
+    S.lv = 0;
+    save(); render();
+  }
+
+  let resetTimer = null;
+  $("reset").addEventListener("click", e => {
+    const b = e.currentTarget;
+    if (!b.classList.contains("confirm")) {
+      b.classList.add("confirm"); b.textContent = "한 번 더 누르면 모든 기록이 지워져요";
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => { b.classList.remove("confirm"); b.textContent = "처음부터 다시 하기"; }, 3000);
+      return;
+    }
+    clearTimeout(resetTimer);
+    b.classList.remove("confirm"); b.textContent = "처음부터 다시 하기";
+    auto = null;
+    S = fresh(); save();
+    popText("새 칼!");
+    render();
+  });
+
+  $("forge").addEventListener("click", () => enhance());
+  $("sell").addEventListener("click", sell);
+
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
