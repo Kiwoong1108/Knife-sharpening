@@ -139,18 +139,11 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
 .stat b { display: block; font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; }
 .stat span { font-size: 11px; color: var(--muted); }
 .log { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-family: var(--f-mono); font-size: 12px; }
-.log li { padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.02); }
+.log li { padding: 5px 8px; border-radius: 6px; background: rgba(255,255,255,.02); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.log li em { font-style: normal; display: flex; gap: 8px; font-size: 11px; }
+.log li em i { font-style: normal; }
+.log li em .s { color: var(--ok); } .log li em .f { color: var(--fail); } .log li em .d { color: var(--boom); }
 .log .ok { color: var(--ok); } .log .fail { color: var(--fail); } .log .boom { color: var(--boom); } .log .sell, .log .saved { color: var(--gold); }
-.rt-label { margin: 16px 0 6px; }
-.rt-wrap { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
-.rt { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
-.rt th { position: sticky; top: 0; background: var(--panel-2); color: var(--muted); font-weight: 700; padding: 6px 8px; text-align: right; }
-.rt th:first-child, .rt td:first-child { text-align: left; }
-.rt td { padding: 4px 8px; text-align: right; border-top: 1px solid rgba(255,255,255,.04); }
-.rt .s { color: var(--ok); } .rt .f { color: var(--fail); } .rt .d { color: var(--boom); }
-.rt .z { color: #5a4f46; }
-.rt tr.cur td { background: rgba(255,122,47,.14); }
-.rt td small { color: var(--muted); font-size: 10px; }
 .reset { margin-top: 14px; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 4px 0; }
 .reset.confirm { color: var(--boom); }
 
@@ -271,13 +264,6 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
       <div class="stat"><b id="sEarned">0</b><span>총 판매액</span></div>
     </div>
     <ul class="log" id="log"></ul>
-    <p class="label rt-label">강화 확률표 · 영구 강화와 지금 켜둔 아이템 반영</p>
-    <div class="rt-wrap">
-      <table class="rt">
-        <thead><tr><th>강화</th><th class="s">성공</th><th class="f">실패</th><th class="d">파괴</th></tr></thead>
-        <tbody id="rateTable"></tbody>
-      </table>
-    </div>
     <button class="reset" id="reset" type="button">처음부터 다시 하기</button>
   </div>
 </div>
@@ -821,7 +807,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
   }
   // 자동강화 중에는 한 번씩의 결과 문구는 띄우지 않음
   function setResult(title, cls, sub) { if (!auto) popText(title, sub, cls); }
-  function addLog(text, cls) { S.log.unshift({ text, cls }); S.log = S.log.slice(0, 7); }
+  function addLog(text, cls, r) { S.log.unshift(r ? { text, cls, r: [r.s, r.f, r.d] } : { text, cls }); S.log = S.log.slice(0, 7); }
   function shake() { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
 
   const usesEl = $("uses");
@@ -972,14 +958,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
     $("sTries").textContent = fmt(S.tries);
     $("sBroken").textContent = fmt(S.broken);
     $("sEarned").textContent = fmt(S.earned);
-    let rows = "";
-    for (let n = 0; n < MAX; n++) {
-      const rr = rates(n);
-      const fl = n >= dropFrom() ? (active("keep", n) ? " <small>유지</small>" : " <small>-1</small>") : "";
-      rows += `<tr${n === L ? ' class="cur"' : ""}><td>+${n} → +${n + 1}</td><td class="s">${rr.s}%</td><td class="${rr.f ? "f" : "z"}">${rr.f}%${rr.f ? fl : ""}</td><td class="${rr.d ? "d" : "z"}">${rr.d}%</td></tr>`;
-    }
-    $("rateTable").innerHTML = rows;
-    $("log").innerHTML = S.log.map(l => `<li class="${l.cls}">${l.text}</li>`).join("") || `<li style="color:var(--muted)">아직 기록이 없어요</li>`;
+    $("log").innerHTML = S.log.map(l => `<li class="${l.cls}"><span>${l.text}</span>${l.r ? `<em><i class="s">성공 ${l.r[0]}%</i><i class="f">실패 ${l.r[1]}%</i><i class="d">파괴 ${l.r[2]}%</i></em>` : ""}</li>`).join("") || `<li style="color:var(--muted)">아직 기록이 없어요</li>`;
 
     cards.forEach((cd, i) => {
       const n = i + 1;
@@ -1001,7 +980,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
       if (show) {
         fx = { type: "up", start: performance.now() };
         setResult("성공!", "ok", `+${S.lv} ${NAMES[S.lv]}`);
-        addLog(`+${L} → +${S.lv} 성공`, "ok");
+        addLog(`+${L} → +${S.lv} 성공`, "ok", r);
       }
       return "up";
     }
@@ -1012,7 +991,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
           SFX.saved();
           fx = { type: "fail", start: performance.now() };
           setResult("부적 방어!", "", "파괴를 막았어요");
-          addLog(`+${L} 파괴 → 부적 방어`, "saved");
+          addLog(`+${L} 파괴 → 부적 방어`, "saved", r);
         }
         return "saved";
       }
@@ -1025,7 +1004,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
         fx = { type: "boom", start: performance.now(), shards: makeShards(L) };
         shake();
         setResult("파괴…", "boom", `파편 +${fmt(scrap)} G`);
-        addLog(`+${L} 파괴됨`, "boom");
+        addLog(`+${L} 파괴됨`, "boom", r);
       }
       return "boom";
     }
@@ -1033,14 +1012,14 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
     if (L >= dropFrom()) {
       if (active("keep", L)) {
         S.inv.keep--;
-        if (show) { setResult("실패", "fail", "방지석으로 유지"); addLog(`+${L} 실패 (유지)`, "fail"); }
+        if (show) { setResult("실패", "fail", "방지석으로 유지"); addLog(`+${L} 실패 (유지)`, "fail", r); }
       } else {
         S.lv--;
-        if (show) { setResult("실패", "fail", `+${S.lv}로 하락`); addLog(`+${L} → +${S.lv} 하락`, "fail"); }
+        if (show) { setResult("실패", "fail", `+${S.lv}로 하락`); addLog(`+${L} → +${S.lv} 하락`, "fail", r); }
       }
     } else if (show) {
       setResult("실패", "fail", "단계 유지");
-      addLog(`+${L} 실패`, "fail");
+      addLog(`+${L} 실패`, "fail", r);
     }
     return "fail";
   }
