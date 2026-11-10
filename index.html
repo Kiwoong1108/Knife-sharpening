@@ -303,11 +303,11 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
   const active = (id, L) => S.use[id] && S.inv[id] > 0 && usable(id, L);
 
   const ITEMS = [
-    { id: "bless", name: "축복의 주문서", desc: "다음 강화 성공 +10%p · 20강까지 사용", price: () => 300, use: true },
-    { id: "gbless", name: "대축복 주문서", desc: "다음 강화 성공 +25%p · 20강까지 사용", price: () => 2500, use: true },
+    { id: "bless", name: "축복의 주문서", desc: "다음 강화 성공 +1%p · 20강까지 사용", price: () => 300, use: true },
+    { id: "gbless", name: "대축복 주문서", desc: "다음 강화 성공 +3%p · 20강까지 사용", price: () => 2500, use: true },
     { id: "keep", name: "하락 방지석", desc: "실패해도 단계 유지 · 22강까지 사용", price: () => 1200, use: true },
     { id: "guard", name: "파괴 방지 부적", desc: "파괴를 막아줌 · 23강까지 사용", price: () => 12000, use: true },
-    { id: "whet", name: "장인의 숫돌", desc: "영구 성공 확률 +1%p", price: lv => Math.round(2000 * Math.pow(2.2, lv) / 100) * 100, perm: true, max: 5 },
+    { id: "whet", name: "장인의 숫돌", desc: "영구 성공 확률 +0.5%p", price: lv => Math.round(2000 * Math.pow(2.2, lv) / 100) * 100, perm: true, max: 5 },
     { id: "merchant", name: "상인 인맥", desc: "영구 판매가 +10%", price: lv => Math.round(1500 * Math.pow(2, lv) / 100) * 100, perm: true, max: 5 },
     { id: "practice", name: "강화 연습", desc: "", price: lv => Math.round(3000 * Math.pow(1.7, lv) / 100) * 100, perm: true, max: 10 }
   ];
@@ -345,13 +345,15 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
 
   function rates(n) {
     if (n >= MAX) return { s: 0, f: 0, d: 0 };
-    let s = SUCC[n] + S.whet;
-    if (active("bless", n)) s += 10;
-    if (active("gbless", n)) s += 25;
-    s = Math.min(s, 100);
+    // 0.5%p 단위라 소수점 한 자리로 맞춤
+    const r1 = x => Math.round(x * 10) / 10;
+    let s = SUCC[n] + S.whet * 0.5;
+    if (active("bless", n)) s += 1;
+    if (active("gbless", n)) s += 3;
+    s = r1(Math.min(s, 100));
     let d = DEST[n];
-    if (s + d > 100) d = 100 - s;
-    return { s, d, f: 100 - s - d };
+    if (s + d > 100) d = r1(100 - s);
+    return { s, d, f: r1(100 - s - d) };
   }
 
   /* ---------- 소리 ---------- */
@@ -914,7 +916,7 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
     if (done) note = "최종 단계 도달! 팔아서 큰돈을 벌어 보세요.";
     else if (r.d > 0 && active("guard", L)) note = "파괴 방지 부적이 칼을 지켜줍니다.";
     else if (L === 14) note = "다음 단계부터 파괴 위험이 생깁니다.";
-    else if (S.whet) note = `장인의 숫돌로 성공 +${S.whet}%p 적용 중`;
+    else if (S.whet) note = `장인의 숫돌로 성공 +${S.whet * 0.5}%p 적용 중`;
     $("note").textContent = note;
 
     const c = cost(L);
