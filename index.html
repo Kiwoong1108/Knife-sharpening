@@ -141,6 +141,16 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
 .log { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-family: var(--f-mono); font-size: 12px; }
 .log li { padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,.02); }
 .log .ok { color: var(--ok); } .log .fail { color: var(--fail); } .log .boom { color: var(--boom); } .log .sell, .log .saved { color: var(--gold); }
+.rt-label { margin: 16px 0 6px; }
+.rt-wrap { max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+.rt { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rt th { position: sticky; top: 0; background: var(--panel-2); color: var(--muted); font-weight: 700; padding: 6px 8px; text-align: right; }
+.rt th:first-child, .rt td:first-child { text-align: left; }
+.rt td { padding: 4px 8px; text-align: right; border-top: 1px solid rgba(255,255,255,.04); }
+.rt .s { color: var(--ok); } .rt .f { color: var(--fail); } .rt .d { color: var(--boom); }
+.rt .z { color: #5a4f46; }
+.rt tr.cur td { background: rgba(255,122,47,.14); }
+.rt td small { color: var(--muted); font-size: 10px; }
 .reset { margin-top: 14px; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; padding: 4px 0; }
 .reset.confirm { color: var(--boom); }
 
@@ -261,6 +271,13 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
       <div class="stat"><b id="sEarned">0</b><span>총 판매액</span></div>
     </div>
     <ul class="log" id="log"></ul>
+    <p class="label rt-label">강화 확률표 · 영구 강화와 지금 켜둔 아이템 반영</p>
+    <div class="rt-wrap">
+      <table class="rt">
+        <thead><tr><th>강화</th><th class="s">성공</th><th class="f">실패</th><th class="d">파괴</th></tr></thead>
+        <tbody id="rateTable"></tbody>
+      </table>
+    </div>
     <button class="reset" id="reset" type="button">처음부터 다시 하기</button>
   </div>
 </div>
@@ -955,6 +972,13 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
     $("sTries").textContent = fmt(S.tries);
     $("sBroken").textContent = fmt(S.broken);
     $("sEarned").textContent = fmt(S.earned);
+    let rows = "";
+    for (let n = 0; n < MAX; n++) {
+      const rr = rates(n);
+      const fl = n >= dropFrom() ? (active("keep", n) ? " <small>유지</small>" : " <small>-1</small>") : "";
+      rows += `<tr${n === L ? ' class="cur"' : ""}><td>+${n} → +${n + 1}</td><td class="s">${rr.s}%</td><td class="${rr.f ? "f" : "z"}">${rr.f}%${rr.f ? fl : ""}</td><td class="${rr.d ? "d" : "z"}">${rr.d}%</td></tr>`;
+    }
+    $("rateTable").innerHTML = rows;
     $("log").innerHTML = S.log.map(l => `<li class="${l.cls}">${l.text}</li>`).join("") || `<li style="color:var(--muted)">아직 기록이 없어요</li>`;
 
     cards.forEach((cd, i) => {
