@@ -291,9 +291,19 @@ button:focus-visible, input:focus-visible + label { outline: 2px solid var(--gol
   const HIT_MS = 100;
 
   const cost = n => n === 0 ? 0 : Math.round(20 * Math.pow(1.4, n) / 10) * 10;
-  const baseValue = n => n === 0 ? 0 : Math.round(15 * Math.pow(1.58, n) / 5) * 5;
+  // 칼값: 판매가(칼값 + 강화비 합)가 "한 번 더 시도하고 팔기"의 기대값과 같아지도록 맞춘 값
+  const BASE_VALUE = [0, 25, 35, 60, 95, 150, 235, 370, 585, 920, 1455, 2300, 3790, 7000, 14910, 36690, 112180, 498820, 4128720, 46370180, 710958230, 13399941500, 318999918070, 10199999885270, 492999999839350, 47999999999775070];
+  const baseValue = n => BASE_VALUE[n] || 0;
   const tierOf = L => L >= 25 ? 5 : Math.floor(L / 5);
-  const fmt = n => n.toLocaleString("ko-KR");
+  function fmt(n) {
+    n = Math.round(n);
+    if (Math.abs(n) < 1e8) return n.toLocaleString("ko-KR");
+    const U = [[1e16, "경"], [1e12, "조"], [1e8, "억"]];
+    for (const [u, name] of U) if (Math.abs(n) >= u) {
+      const v = n / u;
+      return (+v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)).toLocaleString("ko-KR") + name;
+    }
+  }
   // 1~n강까지 성공 경로로 들어간 강화비 합 (실패한 시도 비용은 제외)
   const pathCost = n => { let t = 0; for (let i = 0; i < n; i++) t += cost(i); return t; };
   const dropFrom = () => 10 + Math.min(10, S.practice || 0);
